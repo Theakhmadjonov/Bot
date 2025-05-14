@@ -1,6 +1,8 @@
 import { Update, Start, Ctx, Hears, On, Help, Command } from 'nestjs-telegraf';
+import { join } from 'path';
 import { Context } from 'telegraf';
 import { Contact } from 'telegraf/typings/core/types/typegram';
+import wiki from 'wikijs';
 
 @Update()
 export class BotUpdate {
@@ -34,8 +36,19 @@ export class BotUpdate {
 
   @On('text')
   async handle_text(@Ctx() ctx: Context) {
-    const message = ctx.message!['text'];
-    await ctx.reply(`${message}`);
+    const text = ctx.message!['text'];
+    try {
+      const result = await wiki().page(text);
+      const info = await result.summary();
+      const images = await result.images();
+      const imageUrl = images.filter(
+        (e) => e.endsWith('.jpg') || e.endsWith('.png'),
+      );
+      await ctx.replyWithPhoto({ url: imageUrl[0] });
+      await ctx.reply(info);
+    } catch (error) {
+      await ctx.reply(`Ma'lumot topilmadi`);
+    }
   }
 
   @On('contact')
